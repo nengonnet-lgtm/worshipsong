@@ -362,150 +362,106 @@ export const SongEditorModal: React.FC<Props> = ({
             </div>
           )}
 
-{/* Live Preview Panel */}
-{(activeTab === 'preview' || activeTab === 'split') && (
-  <div
-    className={`flex flex-col h-full overflow-y-auto p-6 ${
-      settings.theme === 'light' ? 'bg-white text-slate-900' : 'bg-neutral-950 text-neutral-100'
-    } ${activeTab === 'split' ? 'w-1/2' : 'w-full'}`}
-    style={{
-      lineHeight: 1.7,
-      fontFamily: "'Anek Thai', 'Sarabun', 'JetBrains Mono', monospace"
-    }}
-  >
-    <div className={`mb-3 pb-2 border-b ${settings.theme === 'light' ? 'border-blue-100' : 'border-neutral-800'}`}>
-      <span className={`text-[10px] font-semibold uppercase tracking-widest font-mono ${
-        settings.theme === 'light' ? 'text-blue-700' : 'text-neutral-400'
-      }`}>
-        Live Stage Preview
-      </span>
-      <h2 className={`text-base font-bold ${settings.theme === 'light' ? 'text-slate-950' : 'text-neutral-100'}`}>{title}</h2>
-      <div className={`text-xs ${settings.theme === 'light' ? 'text-slate-500' : 'text-neutral-400'}`}>
-        {artist} · Key: <span className={`font-bold ${settings.theme === 'light' ? 'text-blue-700' : 'text-amber-400'}`}>{key}</span> · {tempo} BPM
-      </div>
-    </div>
+          {/* Live Preview Panel */}
+          {(activeTab === 'preview' || activeTab === 'split') && (
+            <div className={`flex flex-col h-full overflow-y-auto p-6 ${
+              settings.theme === 'light' ? 'bg-white text-slate-900' : 'bg-neutral-950 text-neutral-100'
+            } ${activeTab === 'split' ? 'w-1/2' : 'w-full'}`}>
+              <div className={`mb-3 pb-2 border-b ${settings.theme === 'light' ? 'border-blue-100' : 'border-neutral-800'}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-widest font-mono ${
+                  settings.theme === 'light' ? 'text-blue-700' : 'text-neutral-400'
+                }`}>
+                  Live Stage Preview
+                </span>
+                <h2 className={`text-base font-bold ${settings.theme === 'light' ? 'text-slate-950' : 'text-neutral-100'}`}>{title}</h2>
+                <div className={`text-xs ${settings.theme === 'light' ? 'text-slate-500' : 'text-neutral-400'}`}>
+                  {artist} · Key: <span className={`font-bold ${settings.theme === 'light' ? 'text-blue-700' : 'text-amber-400'}`}>{key}</span> · {tempo} BPM
+                </div>
+              </div>
 
-    <div className="space-y-6">
-      {previewParsed.sections.map((section, sIdx) => (
-        <div key={sIdx} className="mb-6">
-          {/* ป้ายชื่อท่อนเพลง (เหมือน SongViewer) */}
-          {section.title && (
-            <div className="mb-2.5">
-              <span className={`inline-block px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider font-mono border ${
-                settings.theme === 'light' ? 'bg-blue-50 text-blue-900 border-blue-200' : 'bg-amber-400/15 text-amber-300 border-amber-400/25'
-              }`}>
-                {section.title}
-              </span>
-            </div>
-          )}
+              <div className="space-y-6 font-mono text-sm">
+                {previewParsed.sections.map((section, sIdx) => (
+                  <div key={sIdx} className="space-y-3">
+                    {section.title && (
+                      <span className={`text-xs font-bold font-mono uppercase tracking-wider block ${
+                        settings.theme === 'light' ? 'text-blue-700' : 'text-amber-400'
+                      }`}>
+                        {section.title}
+                      </span>
+                    )}
 
-          <div className="space-y-3">
-            {section.lines.map((line, lIdx) => {
-              if (line.type === 'empty') return <div key={lIdx} className="h-4" />;
-              if (line.type === 'comment') {
-                return (
-                  <div key={lIdx} className={`text-xs italic pl-2.5 py-1 border-l-2 ${
-                    settings.theme === 'light' ? 'text-sky-950 border-sky-500 bg-sky-50/70' : 'text-neutral-400 border-neutral-600'
-                  }`}>
-                    {line.comment}
-                  </div>
-                );
-              }
+                    {section.lines.map((line, lIdx) => {
+                      if (line.type === 'empty') return <div key={lIdx} className="h-3" />;
+                      if (line.type === 'comment') {
+                        return (
+                          <div key={lIdx} className={`text-xs italic ${
+                            settings.theme === 'light' ? 'text-blue-950 border-l-2 border-blue-600 pl-2 bg-sky-50/80 rounded-r' : 'text-neutral-400'
+                          }`}>
+                            {line.comment}
+                          </div>
+                        );
+                      }
 
-              {/* ท่อนดนตรี / บรรทัดที่มีแต่คอร์ด */}
-              if (line.isChordOnly) {
-                return (
-                  <div key={lIdx} className="flex flex-wrap items-center gap-x-2 gap-y-2 py-1.5 font-mono select-none">
-                    {line.items?.map((item, iIdx) => {
-                      const trimmed = item.lyric?.trim() || '';
-                      const isSectionLabel = /^(Intro|IN|Solo|Outro|Hook|Ending|Interlude|Bridge)\s*[:|-]?$/i.test(trimmed);
+                      if (line.isChordOnly) {
+                        return (
+                          <div key={lIdx} className="py-1 font-mono text-sm select-none whitespace-pre leading-relaxed flex flex-wrap items-end">
+                            {line.items?.map((item, itemIdx) => (
+                              <div key={itemIdx} className="inline-flex flex-col justify-end">
+                                {item.chord && (
+                                  <span
+                                    className="font-bold text-xs font-mono leading-none"
+                                    style={{
+                                      color: settings.theme === 'light' ? '#1d4ed8' : (settings.chordsColor || '#38bdf8')
+                                    }}
+                                  >
+                                    {item.chord}
+                                  </span>
+                                )}
+                                <span className="font-mono whitespace-pre text-transparent select-none text-xs leading-none">
+                                  {item.lyric || '\u00A0'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      const lineHasChords = line.items?.some((it) => Boolean(it.chord));
                       return (
-                        <React.Fragment key={iIdx}>
-                          {!item.chord && trimmed && (
-                            <span className={isSectionLabel ? 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider font-mono bg-amber-400/20 text-amber-300 border border-amber-400/30' : 'font-bold text-sm px-1 text-neutral-400'}>
-                              {trimmed}
-                            </span>
-                          )}
-                          {item.chord && (
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                              <span
-                                style={{ color: settings.theme === 'light' ? '#1d4ed8' : (settings.chordsColor || '#38bdf8') }}
-                                className="font-bold font-mono text-sm px-2.5 py-1 rounded-md bg-neutral-800/90 border border-neutral-700/80"
-                              >
-                                {item.chord}
+                        <div key={lIdx} className="flex flex-wrap items-end font-mono text-sm">
+                          {line.items?.map((item, itemIdx) => (
+                            <div key={itemIdx} className="inline-flex flex-col justify-end relative align-bottom">
+                              {lineHasChords && (
+                                <div className="min-h-[1.25em] flex items-end pb-0.5">
+                                  {item.chord ? (
+                                    <span
+                                      className="font-bold text-xs font-mono leading-none whitespace-nowrap"
+                                      style={{
+                                        color: settings.theme === 'light' ? '#1d4ed8' : (settings.chordsColor || '#38bdf8')
+                                      }}
+                                    >
+                                      {item.chord}
+                                    </span>
+                                  ) : (
+                                    <span className="invisible select-none text-xs font-mono leading-none">&nbsp;</span>
+                                  )}
+                                </div>
+                              )}
+                              <span className={`font-mono whitespace-pre leading-relaxed ${
+                                settings.theme === 'light' ? 'text-slate-900 font-semibold' : 'text-neutral-200'
+                              }`}>
+                                {item.lyric || (item.chord ? '\u00A0' : '')}
                               </span>
-                              {trimmed && <span className="text-neutral-400 font-bold text-sm px-0.5">{trimmed}</span>}
-                            </span>
-                          )}
-                        </React.Fragment>
+                            </div>
+                          ))}
+                        </div>
                       );
                     })}
                   </div>
-                );
-              }
-
-              {/* บรรทัดเนื้อร้องพร้อมคอร์ด (คำนวณตำแหน่งตัวอักษรภาษาไทยแบบ Absolute) */}
-              const THAI_NON_SPACING_REGEX = /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g;
-              const getVisualLen = (str: string) => str.replace(THAI_NON_SPACING_REGEX, '').length;
-
-              let chordElements: React.ReactNode[] = [];
-              let lyricLineStr = '';
-              let currentVisualPos = 0;
-
-              line.items && line.items.forEach((item, itemIdx) => {
-                const currentChord = item.chord || '';
-                const currentLyric = item.lyric || '';
-
-                const visualChordLen = getVisualLen(currentChord);
-                const visualLyricLen = getVisualLen(currentLyric);
-
-                if (currentChord) {
-                  chordElements.push(
-                    <span
-                      key={itemIdx}
-                      className="absolute"
-                      style={{ left: `${currentVisualPos}ch` }}
-                    >
-                      <span
-                        style={{ color: settings.theme === 'light' ? '#1d4ed8' : (settings.chordsColor || '#38bdf8') }}
-                        className="font-bold font-mono text-[0.88em] leading-none whitespace-nowrap"
-                      >
-                        {currentChord}
-                      </span>
-                    </span>
-                  );
-                }
-
-                lyricLineStr += currentLyric;
-
-                if (currentChord && visualChordLen > visualLyricLen) {
-                  const extraSpaces = visualChordLen - visualLyricLen;
-                  lyricLineStr += ' '.repeat(extraSpaces);
-                  currentVisualPos += visualChordLen;
-                } else {
-                  currentVisualPos += visualLyricLen;
-                }
-              });
-
-              return (
-                <div key={lIdx} className="font-mono text-left select-none mb-3">
-                  {chordElements.length > 0 && (
-                    <div className="relative h-[1.25em] whitespace-pre font-bold block">
-                      {chordElements}
-                    </div>
-                  )}
-                  <div className={`whitespace-pre block leading-normal ${settings.theme === 'light' ? 'text-slate-900' : 'text-neutral-100'}`}>
-                    {lyricLineStr}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

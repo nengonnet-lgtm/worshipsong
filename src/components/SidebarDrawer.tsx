@@ -13,6 +13,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { AppSettings, AppTheme, InstrumentType } from '../types/song';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface Props {
   isOpen: boolean;
@@ -236,8 +237,13 @@ export const SidebarDrawer: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Bottom PWA Install Button */}
+        <div className="p-3 border-t border-neutral-800 bg-neutral-950/80">
+          <PWAInstallButton variant="full" />
+        </div>
+
         {/* Footer info */}
-        <div className="p-4 border-t border-neutral-800 bg-neutral-950/60 text-xs text-neutral-500 flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-neutral-900 bg-neutral-950/90 text-xs text-neutral-500 flex items-center justify-between">
           <span>Worship SongBook v1.0</span>
           <span>Offline Ready</span>
         </div>

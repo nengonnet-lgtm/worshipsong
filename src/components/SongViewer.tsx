@@ -18,7 +18,9 @@ import {
   Music,
   Eye,
   EyeOff,
-  Download
+  Download,
+  FileText,
+  FileCode
 } from 'lucide-react';
 
 interface Props {
@@ -267,22 +269,59 @@ export const SongViewer: React.FC<Props> = ({
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-const handleExportSong = () => {
-  // ดึงเฉพาะเนื้อหาคอร์ดและเนื้อเพลง โดยลบ Directive แท็กส่วนเกินออก
-  const rawContent = song.chordProContent || '';
-  const cleanContent = rawContent.replace(/\{(?:title|t|artist|a|key|k|tempo|bpm|time|timeSignature):\s*[^}]+\}\n?/gi, '');
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
-  const blob = new Blob([cleanContent], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  const safeTitle = song.title.replace(/[\\/:*?"<>|]/g, '_') || 'song';
-  link.download = `${safeTitle}.chordpro`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-};
+  const handleExportSong = (format: 'chordpro' | 'json' | 'ts' = 'chordpro') => {
+    setShowExportMenu(false);
+    const safeTitle = song.title.replace(/[\\/:*?"<>|]/g, '_') || 'song';
+
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(song, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeTitle}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (format === 'ts') {
+      const tsCode = `import { Song } from '../types/song';\n\nexport const song: Song = ${JSON.stringify(song, null, 2)};\n`;
+      const blob = new Blob([tsCode], { type: 'text/typescript;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeTitle}.ts`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // Default: ChordPro
+    let header = '';
+    const content = song.chordProContent || '';
+    if (!/\{(?:title|t):\s*[^}]+\}/i.test(content)) header += `{title: ${song.title}}\n`;
+    if (song.artist && !/\{(?:artist|a):\s*[^}]+\}/i.test(content)) header += `{artist: ${song.artist}}\n`;
+    if (song.key && !/\{(?:key|k):\s*[^}]+\}/i.test(content)) header += `{key: ${song.key}}\n`;
+    if (song.tempo && !/\{(?:tempo|bpm):\s*[^}]+\}/i.test(content)) header += `{tempo: ${song.tempo}}\n`;
+    if (song.timeSignature && !/\{(?:time|timeSignature):\s*[^}]+\}/i.test(content)) header += `{time: ${song.timeSignature}}\n`;
+
+    const fullExport = header ? `${header}\n${content}` : content;
+    const blob = new Blob([fullExport], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeTitle}.chordpro`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const isLight = settings.theme === 'light';
   const isDarkSlate = settings.theme === 'dark';
@@ -424,14 +463,93 @@ const handleExportSong = () => {
             </button>
           )}
 
-          {/* Export ChordPro */}
-          <button
-            onClick={handleExportSong}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight ? 'bg-white hover:bg-blue-50 text-blue-800 border-blue-200' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'}`}
-            title="Export .chordpro"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          {/* Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
+                showExportMenu
+                  ? isLight
+                    ? 'bg-blue-100 text-blue-900 border-blue-400'
+                    : 'bg-neutral-700 text-white border-amber-400'
+                  : isLight
+                  ? 'bg-white hover:bg-blue-50 text-blue-800 border-blue-200'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-700'
+              }`}
+              title="Export Song (.chordpro, .json, .ts)"
+            >
+              <Download className="w-4 h-4 text-amber-400" />
+            </button>
+
+            {showExportMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div
+                  className={`absolute right-0 top-full mt-1.5 w-56 rounded-xl shadow-2xl py-1.5 z-50 border text-xs ${
+                    isLight
+                      ? 'bg-white border-blue-200 text-slate-800 shadow-blue-900/15'
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-100 shadow-black/80'
+                  }`}
+                >
+                  <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-b ${
+                    isLight
+                      ? 'text-blue-700 border-blue-100 bg-sky-50/60'
+                      : 'text-neutral-400 border-neutral-800 bg-neutral-950/40'
+                  }`}>
+                    Export Single Song
+                  </div>
+
+                  <button
+                    onClick={() => handleExportSong('chordpro')}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors cursor-pointer ${
+                      isLight ? 'hover:bg-blue-50 text-slate-800' : 'hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <Music className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">ChordPro (.chordpro)</div>
+                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        มาตรฐานเนื้อร้องและคอร์ด
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleExportSong('json')}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors cursor-pointer border-t ${
+                      isLight ? 'border-blue-50 hover:bg-blue-50 text-slate-800' : 'border-neutral-800 hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">JSON (.json)</div>
+                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        Object ข้อมูลเพลง
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleExportSong('ts')}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors cursor-pointer border-t ${
+                      isLight ? 'border-blue-50 hover:bg-blue-50 text-slate-800' : 'border-neutral-800 hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <FileCode className="w-4 h-4 text-sky-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">TypeScript (.ts)</div>
+                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        โค้ด Song Object สำเร็จรูป
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Fullscreen Toggle */}
           <button

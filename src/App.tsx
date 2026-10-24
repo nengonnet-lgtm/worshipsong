@@ -8,6 +8,7 @@ import { SongEditorModal } from './components/SongEditorModal';
 import { SetlistManager } from './components/SetlistManager';
 import { ChordLibraryModal } from './components/ChordLibraryModal';
 import { MetronomeBar } from './components/MetronomeBar';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { X } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -422,23 +423,64 @@ export default function App() {
     }
   };
 
-const handleExportLibrary = () => {
-  // หากต้องการลบ directive แท็ก ({title:...}, {key:...}, {tempo:...}) ออกจากเนื้อหาเดิมด้วย
-  const preparedSongs = songs.map((song) => ({
-    ...song,
-    chordProContent: (song.chordProContent || '').replace(/\{(?:title|t|artist|a|key|k|tempo|bpm):\s*[^}]+\}\n?/gi, '')
-  }));
+  const handleExportLibrary = (format: 'json-songs' | 'ts' | 'json-full' = 'json-songs') => {
+    const today = new Date().toISOString().split('T')[0];
 
-  const dataStr =
-    'data:text/json;charset=utf-8,' +
-    encodeURIComponent(JSON.stringify({ songs: preparedSongs, setlists }, null, 2));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute('href', dataStr);
-  downloadAnchor.setAttribute('download', `songbook_pro_backup_${new Date().toISOString().split('T')[0]}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
-};
+    if (format === 'ts') {
+      // ส่งออกเป็นไฟล์ sampleSongs.ts ที่เป็นโค้ด TypeScript ถูกต้องตามหลักไวยากรณ์ 100%
+      const tsContent = `import { Song, Setlist } from '../types/song';\n\nexport const SAMPLE_SONGS: Song[] = ${JSON.stringify(
+        songs,
+        null,
+        2
+      )};\n\nexport const INITIAL_SETLISTS: Setlist[] = ${JSON.stringify(
+        setlists,
+        null,
+        2
+      )};\n`;
+
+      const blob = new Blob([tsContent], { type: 'text/typescript;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'sampleSongs.ts';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    if (format === 'json-full') {
+      // ส่งออกทั้งเพลงและ Setlist ทั้งหมดเพื่อ Backup กู้คืนได้สมบูรณ์
+      const backupData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        songs,
+        setlists
+      };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `songbook_full_backup_${today}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // Default: 'json-songs' - ส่งออกเป็น Array Song[] เพียวๆ เหมือนใน sampleSongs.ts
+    const blob = new Blob([JSON.stringify(songs, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `worship_songs_${today}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const activeSetlist = setlists.find((sl) => sl.id === activeSetlistId) || null;
 
@@ -607,6 +649,8 @@ const handleExportLibrary = () => {
           onClose={() => setEditingSong(null)}
         />
       )}
+
+      <OfflineIndicator />
     </div>
   );
 }

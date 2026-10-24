@@ -13,7 +13,10 @@ import {
   FileText,
   X,
   Menu,
-  SlidersHorizontal
+  SlidersHorizontal,
+  FileCode,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 import { AppSettings } from '../types/song';
@@ -28,7 +31,7 @@ interface Props {
   onDeleteSong: (id: string) => void;
   onCreateSong: () => void;
   onImportSong: (file: File) => void;
-  onExportLibrary: () => void;
+  onExportLibrary: (format?: 'json-songs' | 'ts' | 'json-full') => void;
   onAddSongToSetlist: (setlistId: string, songId: string) => void;
 }
 
@@ -50,6 +53,7 @@ export const SongList: React.FC<Props> = ({
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'title' | 'artist' | 'tempo' | 'recent'>('title');
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [openSetlistDropdownId, setOpenSetlistDropdownId] = useState<string | null>(null);
 
   // Extract all unique tags
@@ -184,21 +188,176 @@ export const SongList: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Action Button: New Song */}
-        <button
-          onClick={onCreateSong}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-sm ${newSongBtnStyle}`}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Song</span>
-        </button>
+        {/* Top Command Bar Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Import Button */}
+          <label
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border transition-colors ${
+              isLight
+                ? 'bg-white hover:bg-blue-50 text-blue-900 border-blue-200 shadow-xs'
+                : isDarkSlate
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-neutral-700'
+            }`}
+            title="Import songs (JSON, ChordPro, Text)"
+          >
+            <Upload className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden md:inline">Import</span>
+            <input
+              type="file"
+              accept=".json,.cho,.chordpro,.pro,.txt,.chopro"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+
+          {/* Export Dropdown Menu (Mounted in Top Command Bar) */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border transition-all ${
+                showExportMenu
+                  ? isLight
+                    ? 'bg-blue-100 text-blue-950 border-blue-400 shadow-xs'
+                    : 'bg-neutral-700 text-white border-amber-400'
+                  : isLight
+                  ? 'bg-white hover:bg-blue-50 text-blue-900 border-blue-200 shadow-xs'
+                  : isDarkSlate
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-neutral-700'
+              }`}
+              title="Export songs (JSON / TypeScript .ts)"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-400" />
+              <span>Export</span>
+              <ChevronDown className={`w-3 h-3 opacity-70 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showExportMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div
+                  className={`absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl py-2 z-50 border text-xs ${
+                    isLight
+                      ? 'bg-white border-blue-200 text-slate-800 shadow-blue-900/20'
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-100 shadow-black/90'
+                  }`}
+                >
+                  <div
+                    className={`px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider border-b ${
+                      isLight
+                        ? 'text-blue-700 border-blue-100 bg-sky-50/70'
+                        : 'text-neutral-400 border-neutral-800 bg-neutral-950/60'
+                    }`}
+                  >
+                    Export Format (เลือกรูปแบบส่งออก)
+                  </div>
+
+                  {/* Option 1: JSON */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      onExportLibrary('json-songs');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 flex items-start gap-3 transition-colors cursor-pointer ${
+                      isLight ? 'hover:bg-blue-50 text-slate-800' : 'hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span>JSON (.json)</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-normal">
+                          แนะนำ
+                        </span>
+                      </div>
+                      <p className={`text-[11px] leading-tight mt-0.5 ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        Array เพลงเพียว ๆ สำหรับ Backup หรือ Import เข้าเครื่องอื่น
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 2: TypeScript */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      onExportLibrary('ts');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 flex items-start gap-3 transition-colors cursor-pointer border-t ${
+                      isLight
+                        ? 'border-blue-50 hover:bg-blue-50 text-slate-800'
+                        : 'border-neutral-800 hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <FileCode className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span>TypeScript (sampleSongs.ts)</span>
+                      </div>
+                      <p className={`text-[11px] leading-tight mt-0.5 ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        โค้ด TypeScript พร้อม import/export นำไปวางในโปรเจกต์ได้ทันที
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 3: Full Backup */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      onExportLibrary('json-full');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 flex items-start gap-3 transition-colors cursor-pointer border-t ${
+                      isLight
+                        ? 'border-blue-50 hover:bg-blue-50 text-slate-800'
+                        : 'border-neutral-800 hover:bg-neutral-800 text-neutral-200'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Download className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span>Full Backup (.json)</span>
+                      </div>
+                      <p className={`text-[11px] leading-tight mt-0.5 ${isLight ? 'text-slate-500' : 'text-neutral-400'}`}>
+                        สำรองทั้งเพลงทั้งหมดและรายการ Setlists ทั้งหมด
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Action Button: New Song */}
+          <button
+            onClick={onCreateSong}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-sm ${newSongBtnStyle}`}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline font-bold">New Song</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Chips Bar (Key, Tags, Sort) */}
       <div className={`px-4 py-2 border-b flex items-center gap-2 overflow-x-auto text-xs shrink-0 ${filterBarBg}`}>
-        <span className={`text-[11px] font-semibold uppercase tracking-wider shrink-0 ${
-          isLight ? 'text-blue-900 font-bold' : isDarkSlate ? 'text-slate-400' : 'text-neutral-500'
-        }`}>
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-wider shrink-0 ${
+            isLight ? 'text-blue-900 font-bold' : isDarkSlate ? 'text-slate-400' : 'text-neutral-500'
+          }`}
+        >
           Filter:
         </span>
 
@@ -241,42 +400,6 @@ export const SongList: React.FC<Props> = ({
           <option value="tempo">Tempo (BPM)</option>
           <option value="recent">Recently Added</option>
         </select>
-
-        {/* Import/Export buttons */}
-        <div className="ml-auto flex items-center gap-2 shrink-0">
-          <label className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer border ${
-            isLight
-              ? 'bg-white hover:bg-blue-50 text-blue-800 border-blue-200 shadow-xs'
-              : isDarkSlate
-              ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-              : 'bg-neutral-800 hover:bg-neutral-750 text-neutral-300 border-neutral-700'
-          }`}>
-            <Upload className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Import</span>
-            <input
-              type="file"
-              accept=".json,.cho,.chordpro,.pro,.txt,.chopro"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-          </label>
-
-          <button
-            onClick={onExportLibrary}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs cursor-pointer border ${
-              isLight
-                ? 'bg-white hover:bg-blue-50 text-blue-800 border-blue-200 shadow-xs'
-                : isDarkSlate
-                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                : 'bg-neutral-800 hover:bg-neutral-750 text-neutral-300 border-neutral-700'
-            }`}
-            title="Backup to JSON"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Backup</span>
-          </button>
-        </div>
       </div>
 
       {/* Main Song List Table / Rows */}
